@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>gerencia de operaciones de red</title>
+<style>
+  /* Reset and base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: medium;
+    background: #eeefef;
+    color: #000000;
+    padding: 15px;
+    height: 100vh;
+    max-height: 600px;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 0.3em;
+    font-weight: 700;
+    color: #072bad;
+    text-align: center;
+  }
+  .container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+    flex-grow: 1;
+    max-height: 600px;
+    color: #000000;
+  }
+  form {
+    background: #9092e4;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    max-width: 320px;
+    overflow-y: auto;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #000000;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1.5px solid #041a36;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input[type="number"]:focus {
+    border-color: #0c26b7;
+    outline: none;
+  }
+  button {
+    margin-top: 15px;
+    width: 100%;
+    background-color: #02082a;
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #f5f5f9;
+    color: #040233;
+  }
+  .charts-container {
+    background: transparent;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-height: 100%;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 560px;
+  }
+  .chart-wrapper {
+    background: rgb(255, 255, 255);
+    padding: 12px 15px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .chart-wrapper h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    color: #3f51b5;
+    font-weight: 700;
+    text-align: center;
+  }
+  canvas {
+    width: 100% !important;
+    height: 230px !important;
+  }
+
+  @media (max-width: 850px) {
+    .container {
+      flex-direction: column;
+      max-height: none;
+    }
+    form {
+      max-width: 100%;
+      margin-bottom: 20px;
+    }
+    .charts-container {
+      max-width: 100%;
+      max-height: none;
+    }
+    canvas {
+      height: 220px !important;
+    }
+  }
+</style>
+</head>
+<body>
+<h1>GERENCIA DE FORTALECIMIENTO</h1>
+<div class="container">
+  <form id="dataForm">
+    <label for="averiasaba"> AVERIAS ABA</label>
+    <input type="number" id="averiasaba" name="averiasaba" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+
+    <label for="averiasgpon">AVERIAS GPON</label>
+    <input type="number" id="averiasgpon" name="averiasgpon" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+
+    <label for="averiasmasivas">AVERIAS MASIVAS </label>
+    <input type="number" id="averiasmasivas" name="averiasmasivas" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+
+    <label for="averiasno">AVERIAS NO MASIVAS </label>
+    <input type="number" id="averiasno" name="averiasno" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+     
+    <label for="instalacionesvoz">INSTALACIONES DE VOZ</label>
+    <input type="number" id="instalacionesvoz" name="instalacionesvoz" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+
+    <label for="instalacionesABA">INSTALACIONES DE ABA</label>
+    <input type="number" id="instalacionesABA" name="instalacionesABA" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+     
+    <label for="improvistos">CANCELACION DE IMPROVISTOS</label>
+    <input type="number" id="improvistos" name="improvistos" min="0" step="1" required placeholder="Ingrese un valor numérico" />
+
+    <button type="submit">Actualizar Gráficas</button>
+  </form>
+
+  <div class="charts-container">
+    <div class="chart-wrapper">
+      <h2>Cancelación de Averías</h2>
+      <canvas id="chartAverias"></canvas>
+    </div>
+    <div class="chart-wrapper">
+      <h2>Instalaciones</h2>
+      <canvas id="chartInstalaciones"></canvas>
+    </div>
+    <div class="chart-wrapper">
+      <h2>Cancelación de Improvistos EIM</h2>
+      <canvas id="chartImprovistos"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (() => {
+    const ctxAverias = document.getElementById('chartAverias').getContext('2d');
+    const ctxInstalaciones = document.getElementById('chartInstalaciones').getContext('2d');
+    const ctxImprovistos = document.getElementById('chartImprovistos').getContext('2d');
+
+    const commonOptions = {
+      responsive: true,
+      animation: {
+        duration: 600,
+        easing: 'easeOutQuart'
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 },
+          grid: { color: '#eee' }
+        },
+        x: {
+          grid: { display: false }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true, mode: 'index', intersect: false }
+      }
+    };
+
+    const chartAverias = new Chart(ctxAverias, {
+      type: 'line',
+      data: {
+        labels: ['aba', 'gpon', 'averias masivas', 'no masivas'],
+        datasets: [{
+          label: 'Valores Averías',
+          data: [0, 0, 0, 0],
+          borderColor: 'rgba(244, 67, 54, 1)',
+          backgroundColor: 'rgba(244, 67, 54, 0.2)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          borderRadius: 6,
+        }]
+      },
+      options: commonOptions
+    });
+
+    const chartInstalaciones = new Chart(ctxInstalaciones, {
+      type: 'line',
+      data: {
+        labels: ['voz', 'ABA'],
+        datasets: [{
+          label: 'Valores Instalaciones',
+          data: [0, 0],
+          borderColor: 'rgba(63, 81, 181, 1)',
+          backgroundColor: 'rgba(63, 81, 181, 0.2)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          borderRadius: 6,
+        }]
+      },
+      options: commonOptions
+    });
+
+    const chartImprovistos = new Chart(ctxImprovistos, {
+      type: 'line',
+      data: {
+        labels: ['Cancelación de Improvistos EIM'],
+        datasets: [{
+          label: 'Valores Improvistos',
+          data: [0],
+          borderColor: 'rgba(76, 175, 80, 1)',
+          backgroundColor: 'rgba(76, 175, 80, 0.2)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          borderRadius: 6,
+        }]
+      },
+      options: commonOptions
+    });
+
+    const form = document.getElementById('dataForm');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const averiasaba = Number(form.averiasaba.value);
+      const averiasgpon = Number(form.averiasgpon.value);
+      const averiasmasivas = Number(form.averiasmasivas.value);
+      const averiasno = Number(form.averiasno.value);
+      const instalacionesvoz = Number(form.instalacionesvoz.value);
+      const instalacionesABA = Number(form.instalacionesABA.value);
+      const improvistos = Number(form.improvistos.value);
+
+      if (
+        [averiasaba, averiasgpon, averiasmasivas, averiasno, instalacionesvoz, instalacionesABA, improvistos]
+          .some(v => isNaN(v))
+      ) {
+        alert("Por favor ingrese valores numéricos válidos.");
+        return;
+      }
+
+      chartAverias.data.datasets[0].data = [averiasaba, averiasgpon, averiasmasivas, averiasno];
+      chartAverias.update();
+
+      chartInstalaciones.data.datasets[0].data = [instalacionesvoz, instalacionesABA];
+      chartInstalaciones.update();
+
+      chartImprovistos.data.datasets[0].data = [improvistos];
+      chartImprovistos.update();
+    });
+  })();
+</script>
+</body>
+</html>
